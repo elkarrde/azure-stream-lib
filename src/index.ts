@@ -60,7 +60,7 @@ export async function main() {
     )
   } catch (err) {
     console.error(
-      `Error retrieving Media Services Client. Status Code:${err.statusCode}`
+      'Error retrieving Media Services Client. Status Code:', err.statusCode
     )
     return { error: err }
   }
@@ -163,7 +163,7 @@ export async function main() {
         )
     }
 
-    console.log(`Starting the Live Event operation... please stand by`)
+    console.log('Starting the Live Event operation, please stand by.')
     let liveEventStartOperation =
       await mediaServicesClient.liveEvents.beginStart(
         resourceGroup,
