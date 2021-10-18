@@ -2,7 +2,7 @@ import * as msRestNodeAuth from '@azure/ms-rest-nodeauth'
 import {
   AzureMediaServices,
   AzureMediaServicesModels,
-  Mediaservices
+  Mediaservices,
 } from '@azure/arm-mediaservices'
 import {
   AzureMediaServicesOptions,
@@ -11,7 +11,7 @@ import {
   LiveEventInputAccessControl,
   LiveEventPreview,
   LiveOutput,
-  MediaservicesGetResponse
+  MediaservicesGetResponse,
 } from '@azure/arm-mediaservices/esm/models'
 
 import * as readlineSync from 'readline-sync'
@@ -44,44 +44,57 @@ export async function main() {
   let liveOutput: LiveOutput
 
   let clientOptions: AzureMediaServicesOptions = {
-    longRunningOperationRetryTimeout: 5
+    longRunningOperationRetryTimeout: 5,
   }
 
   try {
-    credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(clientId, secret, tenantDomain)
-    mediaServicesClient = new AzureMediaServices(credentials, subscriptionId, clientOptions)
+    credentials = await msRestNodeAuth.loginWithServicePrincipalSecret(
+      clientId,
+      secret,
+      tenantDomain
+    )
+    mediaServicesClient = new AzureMediaServices(
+      credentials,
+      subscriptionId,
+      clientOptions
+    )
   } catch (err) {
-    console.error(`Error retrieving Media Services Client. Status Code:${err.statusCode}`)
+    console.error(
+      `Error retrieving Media Services Client. Status Code:${err.statusCode}`
+    )
     return { error: err }
   }
 
-  mediaAccount = await mediaServicesClient.mediaservices.get(resourceGroup, accountName)
+  mediaAccount = await mediaServicesClient.mediaservices.get(
+    resourceGroup,
+    accountName
+  )
   try {
     let output = {
       ingestUrl: null,
       previewEndpoint: null,
       streamingEndpoint: null,
       hslManifest: null,
-      dashManifest: null
+      dashManifest: null,
     }
 
     let allowAllInputRange: IPRange = {
       name: 'AllowAll',
       address: '0.0.0.0',
-      subnetPrefixLength: 0
+      subnetPrefixLength: 0,
     }
     let liveEventInputAccess: LiveEventInputAccessControl = {
       ip: {
-        allow: [allowAllInputRange]
-      }
+        allow: [allowAllInputRange],
+      },
     }
 
     let liveEventPreview: LiveEventPreview = {
       accessControl: {
         ip: {
-          allow: [allowAllInputRange]
-        }
-      }
+          allow: [allowAllInputRange],
+        },
+      },
     }
 
     let liveEventCreate: LiveEvent = {
@@ -94,13 +107,13 @@ export async function main() {
         // Use this value when you want to make sure the ingest URL is static
         // and always the same. If omitted, the service will generate a random
         // GUID value.
-        accessToken: '9eb1f703b149417c8448771867f48501'
+        accessToken: '9eb1f703b149417c8448771867f48501',
       },
       encoding: {
         encodingType: 'None',
       },
       preview: liveEventPreview,
-      streamOptions: ['LowLatency']
+      streamOptions: ['LowLatency'],
     }
 
     let liveCreateOperation = await mediaServicesClient.liveEvents.beginCreate(
@@ -111,42 +124,52 @@ export async function main() {
       { autoStart: false }
     )
 
-    console.log('HTTP Response Status:', ${liveCreateOperation.getInitialResponse().status})
+    console.log(
+      'HTTP Response Status:',
+      liveCreateOperation.getInitialResponse().status
+    )
 
     if (!liveCreateOperation.isFinished()) {
       await liveCreateOperation.pollUntilFinished()
     }
 
-    console.log('Creating an asset named:', ${assetName})
-    let asset = await mediaServicesClient.assets.createOrUpdate(resourceGroup, accountName, assetName, {})
+    console.log('Creating an asset named:', assetName)
+    let asset = await mediaServicesClient.assets.createOrUpdate(
+      resourceGroup,
+      accountName,
+      assetName,
+      {}
+    )
     let manifestName: string = 'output'
-    console.log('Creating a live output named:', ${liveOutputName})
+    console.log('Creating a live output named:', liveOutputName)
 
-    let liveOutputCreate: LiveOutput;
+    let liveOutputCreate: LiveOutput
     if (asset.name) {
       liveOutputCreate = {
         description: 'Futudent streaming service',
         assetName: asset.name,
         manifestName: manifestName,
         archiveWindowLength: 'PT1H',
-        hls: { fragmentsPerTsSegment: 1 }
+        hls: { fragmentsPerTsSegment: 1 },
       }
 
-      let liveOutputOperation = await mediaServicesClient.liveOutputs.beginCreate(
-        resourceGroup,
-        accountName,
-        liveEventName,
-        liveOutputName,
-        liveOutputCreate
-      )
+      let liveOutputOperation =
+        await mediaServicesClient.liveOutputs.beginCreate(
+          resourceGroup,
+          accountName,
+          liveEventName,
+          liveOutputName,
+          liveOutputCreate
+        )
     }
 
-    console.log(`Starting the Live Event operation... please stand by`);
-    let liveEventStartOperation = await mediaServicesClient.liveEvents.beginStart(
-      resourceGroup,
-      accountName,
-      liveEventName
-    )
+    console.log(`Starting the Live Event operation... please stand by`)
+    let liveEventStartOperation =
+      await mediaServicesClient.liveEvents.beginStart(
+        resourceGroup,
+        accountName,
+        liveEventName
+      )
     let response = await liveEventStartOperation.pollUntilFinished()
     let liveEvent = await mediaServicesClient.liveEvents.get(
       resourceGroup,
@@ -156,7 +179,7 @@ export async function main() {
 
     if (liveEvent.input?.endpoints) {
       let ingestUrl = liveEvent.input.endpoints[0].url
-      console.log('RTMP ingest:', ${ingestUrl})
+      console.log('RTMP ingest:', ingestUrl)
       output.ingestUrl = ingestUrl
     }
 
@@ -170,22 +193,34 @@ export async function main() {
     // IMPORTANT TIP!: Make CERTAIN that the video is flowing to the Preview URL before continuing!
 
     let locator = await createStreamingLocator(assetName, streamingLocatorName)
-    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(resourceGroup, accountName, streamingEndpointName)
+    let streamingEndpoint = await mediaServicesClient.streamingEndpoints.get(
+      resourceGroup,
+      accountName,
+      streamingEndpointName
+    )
     if (streamingEndpoint?.resourceState !== 'Running') {
-      await mediaServicesClient.streamingEndpoints.start(resourceGroup, accountName, streamingEndpointName)
+      await mediaServicesClient.streamingEndpoints.start(
+        resourceGroup,
+        accountName,
+        streamingEndpointName
+      )
     }
 
     let hostname = streamingEndpoint.hostName
     let scheme = 'https'
 
-    let manifests = await buildManifestPaths(scheme, hostname, locator.streamingLocatorId, manifestName)
+    let manifests = await buildManifestPaths(
+      scheme,
+      hostname,
+      locator.streamingLocatorId,
+      manifestName
+    )
 
     return output
   } catch (err) {
     console.error(err)
     return { error: err }
-  }
-  finally {
+  } finally {
     //@ts-ignore - these will be set, so avoiding the compiler complaint for now.
     await cleanUpResources(liveEventName, liveOutputName)
   }
@@ -194,10 +229,15 @@ export async function main() {
 main().catch((err) => {
   console.error('Error running live streaming:', err.message)
   return { error: err }
-});
+})
 
 // --- --- ---
-async function buildManifestPaths(scheme: string, hostname: string | undefined, streamingLocatorId: string |undefined, manifestName: string) {
+async function buildManifestPaths(
+  scheme: string,
+  hostname: string | undefined,
+  streamingLocatorId: string | undefined,
+  manifestName: string
+) {
   const hlsFormat: string = 'format=m3u8-cmaf'
   const dashFormat: string = 'format=mpd-time-cmaf'
 
@@ -209,14 +249,14 @@ async function buildManifestPaths(scheme: string, hostname: string | undefined, 
   let dashManifest = `${manifestBase}(${dashFormat})`
   return {
     hlsManifest: hlsManifest,
-    dashManifest: dashManifest
+    dashManifest: dashManifest,
   }
 }
 
 async function createStreamingLocator(assetName: string, locatorName: string) {
   let streamingLocator = {
     assetName: assetName,
-    streamingPolicyName: 'Predefined_ClearStreamingOnly'
+    streamingPolicyName: 'Predefined_ClearStreamingOnly',
   }
 
   let locator = await mediaServicesClient.streamingLocators.create(
@@ -238,12 +278,13 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
   )
 
   if (liveOutputForCleanup) {
-    let deleteOperation = await mediaServicesClient.liveOutputs.beginDeleteMethod(
-      resourceGroup,
-      accountName,
-      liveEventName,
-      liveOutputName
-    )
+    let deleteOperation =
+      await mediaServicesClient.liveOutputs.beginDeleteMethod(
+        resourceGroup,
+        accountName,
+        liveEventName,
+        liveOutputName
+      )
 
     await deleteOperation.pollUntilFinished()
   }
@@ -268,11 +309,12 @@ async function cleanUpResources(liveEventName: string, liveOutputName: string) {
       await stopOperation.pollUntilFinished()
     }
 
-    let deleteLiveEventOperation = await mediaServicesClient.liveEvents.beginDeleteMethod(
-      resourceGroup,
-      accountName,
-      liveEventName
-    )
-    await deleteLiveEventOperation.pollUntilFinished();
+    let deleteLiveEventOperation =
+      await mediaServicesClient.liveEvents.beginDeleteMethod(
+        resourceGroup,
+        accountName,
+        liveEventName
+      )
+    await deleteLiveEventOperation.pollUntilFinished()
   }
 }
